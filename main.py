@@ -12,8 +12,8 @@ import uuid
 from pathlib import Path
 
 import numpy as np
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi import FastAPI, Request, Cookie
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 
 from generator import (
     generate_spectrum,
@@ -23,6 +23,11 @@ from generator import (
 )
 
 app = FastAPI(title="音樂符號律動動畫產生器")
+
+# 密碼設定
+ACCESS_PASSWORD = os.environ.get("ACCESS_PASSWORD", "oldjvip")
+# 已驗證的 token 集合（記憶體內，重啟會清空）
+verified_tokens: set[str] = set()
 
 # 輸出目錄
 OUTPUT_DIR = Path(tempfile.gettempdir()) / "music_viz_outputs"
@@ -46,7 +51,117 @@ def cleanup_old_files():
 
 
 # ---------------------------------------------------------------------------
-# 前端頁面
+# 密碼驗證頁面
+# ---------------------------------------------------------------------------
+
+LOGIN_PAGE = """<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Rhythm Visualizer - 驗證</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:#0a0a1a;color:#e0e0e0;
+    min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:2rem 1rem;
+  }
+  .lock-icon{font-size:3rem;margin-bottom:1rem;opacity:.6}
+  h1{
+    font-size:1.6rem;margin-bottom:.3rem;
+    background:linear-gradient(135deg,#00ffaa,#7b68ee);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .subtitle{color:#666;font-size:.85rem;margin-bottom:2rem}
+  .login-card{
+    background:#12122a;border:1px solid #2a2a4a;border-radius:16px;
+    padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center;
+  }
+  .input-group{margin-bottom:1.2rem}
+  .input-group label{
+    display:block;font-size:.8rem;color:#aaa;margin-bottom:.4rem;
+    text-align:left;font-weight:500;
+  }
+  .input-group input{
+    width:100%;background:#1a1a35;border:1px solid #333;border-radius:10px;
+    color:#fff;padding:.7rem 1rem;font-size:1rem;outline:none;
+    text-align:center;letter-spacing:2px;
+    transition:border-color .2s;
+  }
+  .input-group input:focus{border-color:#00ffaa}
+  .btn{
+    width:100%;padding:.75rem;border:none;border-radius:10px;
+    font-size:1rem;font-weight:600;cursor:pointer;
+    background:linear-gradient(135deg,#00ffaa,#00cc88);color:#0a0a1a;
+    transition:opacity .2s,transform .1s;
+    margin-top:.5rem;
+  }
+  .btn:hover{opacity:.9}
+  .btn:active{transform:scale(.98)}
+  .error-msg{
+    color:#ff6b6b;font-size:.85rem;margin-top:.8rem;
+    min-height:1.2em;
+  }
+  .shake{animation:shake .4s ease-in-out}
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    20%,60%{transform:translateX(-8px)}
+    40%,80%{transform:translateX(8px)}
+  }
+</style>
+</head>
+<body>
+<div class="lock-icon">&#128274;</div>
+<h1>Music Rhythm Visualizer</h1>
+<p class="subtitle">請輸入密碼以進入</p>
+
+<div class="login-card">
+  <form id="loginForm" onsubmit="return handleLogin(event)">
+    <div class="input-group">
+      <label>密碼</label>
+      <input type="password" id="password" placeholder="Enter password" autofocus>
+    </div>
+    <button class="btn" type="submit">進入</button>
+  </form>
+  <div class="error-msg" id="errorMsg"></div>
+</div>
+
+<script>
+async function handleLogin(e) {
+  e.preventDefault();
+  const pw = document.getElementById('password').value;
+  const errEl = document.getElementById('errorMsg');
+  const card = document.querySelector('.login-card');
+  errEl.textContent = '';
+
+  const res = await fetch('/api/verify', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({password: pw}),
+  });
+  const data = await res.json();
+  if (data.ok) {
+    window.location.href = '/app';
+  } else {
+    errEl.textContent = '密碼錯誤，請重試';
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+    document.getElementById('password').value = '';
+    document.getElementById('password').focus();
+  }
+  return false;
+}
+</script>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
+# 前端主頁面
 # ---------------------------------------------------------------------------
 
 HTML_PAGE = """<!DOCTYPE html>
@@ -311,8 +426,29 @@ function pollProgress(taskId) {
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
+async def index(auth: str = Cookie(default=None)):
+    if auth and auth in verified_tokens:
+        return RedirectResponse("/app", status_code=302)
+    return LOGIN_PAGE
+
+
+@app.get("/app", response_class=HTMLResponse)
+async def main_app(auth: str = Cookie(default=None)):
+    if not auth or auth not in verified_tokens:
+        return RedirectResponse("/", status_code=302)
     return HTML_PAGE
+
+
+@app.post("/api/verify")
+async def api_verify(request: Request):
+    body = await request.json()
+    if body.get("password") == ACCESS_PASSWORD:
+        token = uuid.uuid4().hex
+        verified_tokens.add(token)
+        resp = JSONResponse({"ok": True})
+        resp.set_cookie("auth", token, httponly=True, samesite="lax", max_age=86400)
+        return resp
+    return JSONResponse({"ok": False}, status_code=401)
 
 
 # ---------------------------------------------------------------------------
