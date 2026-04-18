@@ -5,9 +5,11 @@
 隨機產生頻譜波形律動動畫，輸出為去背 MOV (ProRes 4444) 透明影片素材。
 參考風格：lo-fi 音樂頻道常見的纖細鏡像直條頻譜。
 
-支援三種動畫類型：
+支援四種動畫類型：
   - bar      : 鏡像直條頻譜（lo-fi 風格，纖細白色條紋上下對稱）
   - circular : 圓環頻譜
+  - wave     : 波形線
+  - dots     : 底部點陣律動（YouTube 影片底部常見橫排圓點頻譜）
   - wave     : 波形線
 
 使用方式：
@@ -265,6 +267,72 @@ def draw_waveform(draw, width, height, spectrum, t, color, glow_layer):
 
 
 # ---------------------------------------------------------------------------
+# 繪製：底部點陣律動（YouTube 影片底部常見橫排圓點頻譜）
+# ---------------------------------------------------------------------------
+
+def draw_dots_spectrum(draw, width, height, spectrum, t, color, glow_layer):
+    """
+    橫排圓點頻譜：點陣沿底部水平排列，每個點的大小與亮度跟隨頻譜值跳動。
+    模擬 YouTube 音樂影片底部常見的點狀律動動畫。
+    """
+    num_dots = len(spectrum)
+    r, g, b = color[0], color[1], color[2]
+
+    # 佈局：橫排佔畫面寬度 80%，位置在畫面下方 12% 處
+    row_width = width * 0.80
+    start_x = (width - row_width) / 2
+    base_y = height * 0.88
+
+    dot_spacing = row_width / num_dots
+    max_radius = dot_spacing * 0.42
+    min_radius = max_radius * 0.25
+
+    # 整體呼吸脈衝（全部點一起微微放大）
+    pulse = beat_pulse(t, 120) * 0.15
+
+    for i, val in enumerate(spectrum):
+        cx = start_x + i * dot_spacing + dot_spacing / 2
+        radius = min_radius + (max_radius - min_radius) * (val + pulse)
+        radius = max(min_radius * 0.5, min(max_radius * 1.15, radius))
+
+        # 透明度：最低點半透明，最高點不透明
+        base_alpha = 60
+        alpha = int(base_alpha + (255 - base_alpha) * val)
+        alpha = min(255, alpha)
+
+        dot_color = (r, g, b, alpha)
+        draw.ellipse(
+            [cx - radius, base_y - radius, cx + radius, base_y + radius],
+            fill=dot_color
+        )
+
+        # 頂部高光（小白點讓圓點有立體感）
+        hl_r = radius * 0.3
+        hl_alpha = int(val * 160)
+        draw.ellipse(
+            [cx - hl_r * 0.6, base_y - radius * 0.55 - hl_r * 0.6,
+             cx + hl_r * 0.6, base_y - radius * 0.55 + hl_r * 0.6],
+            fill=(255, 255, 255, hl_alpha)
+        )
+
+        if glow_layer is not None:
+            gd = ImageDraw.Draw(glow_layer)
+            gr = radius + 4
+            gd.ellipse(
+                [cx - gr, base_y - gr, cx + gr, base_y + gr],
+                fill=(r, g, b, int(val * 70))
+            )
+
+    # 細橫線連結所有點（半透明，增加整體感）
+    line_y = base_y
+    draw.line(
+        [(start_x + dot_spacing / 2, line_y),
+         (start_x + row_width - dot_spacing / 2, line_y)],
+        fill=(r, g, b, 25), width=1
+    )
+
+
+# ---------------------------------------------------------------------------
 # 渲染引擎
 # ---------------------------------------------------------------------------
 
@@ -284,6 +352,8 @@ def render_frame(frame_idx, fps, anim_type, width, height, color,
         draw_circular_spectrum(draw, width, height, spectrum, color, glow_layer)
     elif anim_type == 'wave':
         draw_waveform(draw, width, height, spectrum, t, color, glow_layer)
+    elif anim_type == 'dots':
+        draw_dots_spectrum(draw, width, height, spectrum, t, color, glow_layer)
 
     if glow and glow_layer is not None:
         glow_layer = glow_layer.filter(ImageFilter.GaussianBlur(radius=6))
@@ -330,7 +400,7 @@ def main():
   python generator.py --type wave --bpm 90 --color "#FFFFFF"
         """
     )
-    parser.add_argument('--type', choices=['bar', 'circular', 'wave'], default='bar',
+    parser.add_argument('--type', choices=['bar', 'circular', 'wave', 'dots'], default='bar',
                         help='動畫類型 (預設: bar)')
     parser.add_argument('--style', choices=['compact', 'full'], default='compact',
                         help='bar 模式的尺寸風格: compact=小型集中(lo-fi風), full=佔滿寬度 (預設: compact)')

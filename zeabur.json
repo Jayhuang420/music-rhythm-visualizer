@@ -1,0 +1,21 @@
+{
+  "build": {
+    "type": "dockerfile"
+  },
+  "run": {
+    "env": {
+      "ACCESS_PASSWORD": {
+        "default": "oldjvip",
+        "expose": true,
+        "description": "網頁登入密碼"
+      }
+    },
+    "ports": [
+      {
+        "id": "web",
+        "port": 8080,
+        "type": "HTTP"
+      }
+    ]
+  }
+}

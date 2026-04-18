@@ -258,6 +258,7 @@ HTML_PAGE = """<!DOCTYPE html>
     <div class="field">
       <label>動畫類型</label>
       <select id="type">
+        <option value="dots">底部點陣律動 (Dots) ★</option>
         <option value="bar">直條頻譜 (Bar)</option>
         <option value="circular">圓環頻譜 (Circular)</option>
         <option value="wave">波形線 (Wave)</option>
