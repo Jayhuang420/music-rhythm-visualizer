@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 from fastapi import FastAPI, Request, Cookie
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from generator import (
     generate_spectrum,
@@ -23,6 +24,30 @@ from generator import (
 )
 
 app = FastAPI(title="音樂符號律動動畫產生器")
+
+# 預覽 GIF 靜態目錄
+PREVIEW_DIR = Path(__file__).parent / "previews"
+if PREVIEW_DIR.exists():
+    app.mount("/previews", StaticFiles(directory=str(PREVIEW_DIR)), name="previews")
+
+# 各動畫類型的「適合曲風」備註
+GENRE_INFO = {
+    "dots":           {"label": "底部點陣律動",   "genre": "Lo-fi、Chill、Study Music、深夜放鬆 BGM"},
+    "bar":            {"label": "直條頻譜",       "genre": "Pop、K-pop、流行樂、EDM 通用萬用款"},
+    "circular":       {"label": "圓環頻譜",       "genre": "電子、Techno、舞曲、Future Bass"},
+    "wave":           {"label": "波形線",         "genre": "Ambient、療癒系、冥想、瑜伽音樂"},
+    "pulse_ring":     {"label": "脈衝光環",       "genre": "Lo-fi、Deep House、放鬆、夜晚 Vibe"},
+    "bouncing_balls": {"label": "彈跳小球",       "genre": "兒歌、輕快流行、Indie Pop、Disco"},
+    "particle_burst": {"label": "粒子爆發",       "genre": "EDM、Trap、Bass Drop、Festival 高潮段"},
+    "vinyl":          {"label": "黑膠唱片",       "genre": "Jazz、City Pop、復古 R&B、Soul、爵士"},
+    "mountain":       {"label": "山形頻譜",       "genre": "自然系、Acoustic、Folk、空靈 Indie"},
+    "ripple":         {"label": "水波紋",         "genre": "治癒系、Sleep Music、夜曲、ASMR"},
+    "starburst":      {"label": "星芒散射",       "genre": "Hip-hop、Trap、動感、街舞 Beat"},
+    "retro_grid":     {"label": "80s 復古網格",   "genre": "Synthwave、Vaporwave、Retrowave、80s 懷舊"},
+    "trail":          {"label": "拖尾彗星",       "genre": "House、Tech House、Progressive、舞池 Mix"},
+    "scrolling_line": {"label": "滾動心電圖",     "genre": "Beat 教學、Metronome、節拍器、極簡電音"},
+    "grid_matrix":    {"label": "LED 方塊矩陣",   "genre": "Chiptune、Game Music、復古電子、8-bit"},
+}
 
 # 密碼設定
 ACCESS_PASSWORD = os.environ.get("ACCESS_PASSWORD", "oldjvip")
@@ -243,6 +268,27 @@ HTML_PAGE = """<!DOCTYPE html>
     max-width:100%;border-radius:8px;border:1px solid #2a2a4a;
   }
   .preview-label{font-size:.75rem;color:#666;margin-top:.3rem}
+
+  /* 動畫類型預覽（下拉選單下方） */
+  .type-preview{
+    margin-top:.6rem;background:#0a0a20;border:1px solid #2a2a4a;
+    border-radius:10px;padding:.6rem;display:flex;gap:.8rem;
+    align-items:center;
+  }
+  .type-preview img{
+    width:140px;height:78px;object-fit:cover;border-radius:6px;
+    background:#000;flex-shrink:0;
+  }
+  .type-preview .meta{flex:1;min-width:0}
+  .type-preview .meta .title{
+    font-size:.85rem;color:#fff;font-weight:600;margin-bottom:.25rem;
+  }
+  .type-preview .meta .genre{
+    font-size:.72rem;color:#9aa;line-height:1.4;
+  }
+  .type-preview .meta .genre b{
+    color:#00ffaa;font-weight:500;
+  }
   .error{
     margin-top:1rem;color:#ff6b6b;font-size:.85rem;display:none;text-align:center;
   }
@@ -257,7 +303,7 @@ HTML_PAGE = """<!DOCTYPE html>
   <div class="row">
     <div class="field">
       <label>動畫類型</label>
-      <select id="type">
+      <select id="type" onchange="updateTypePreview()">
         <optgroup label="── 經典 ──">
           <option value="dots">底部點陣律動 (Dots) ★</option>
           <option value="bar">直條頻譜 (Bar)</option>
@@ -285,6 +331,14 @@ HTML_PAGE = """<!DOCTYPE html>
         <option value="compact">小型集中 (Lo-fi)</option>
         <option value="full">佔滿寬度</option>
       </select>
+    </div>
+  </div>
+
+  <div class="type-preview" id="typePreview">
+    <img id="typePreviewImg" src="/previews/dots.gif" alt="preview">
+    <div class="meta">
+      <div class="title" id="typePreviewTitle">底部點陣律動</div>
+      <div class="genre"><b>適合曲風：</b><span id="typePreviewGenre">Lo-fi、Chill、Study Music、深夜放鬆 BGM</span></div>
     </div>
   </div>
 
@@ -353,6 +407,22 @@ HTML_PAGE = """<!DOCTYPE html>
 
 <script>
 let pollTimer = null;
+let GENRE_INFO = {};
+
+// 載入曲風資訊
+fetch('/api/genres').then(r => r.json()).then(data => {
+  GENRE_INFO = data;
+  updateTypePreview();
+});
+
+function updateTypePreview() {
+  const t = document.getElementById('type').value;
+  const info = GENRE_INFO[t];
+  if (!info) return;
+  document.getElementById('typePreviewImg').src = `/previews/${t}.gif`;
+  document.getElementById('typePreviewTitle').textContent = info.label;
+  document.getElementById('typePreviewGenre').textContent = info.genre;
+}
 
 async function startGenerate() {
   const btn = document.getElementById('generateBtn');
@@ -453,6 +523,12 @@ async def main_app(auth: str = Cookie(default=None)):
     if not auth or auth not in verified_tokens:
         return RedirectResponse("/", status_code=302)
     return HTML_PAGE
+
+
+@app.get("/api/genres")
+async def api_genres():
+    """回傳所有動畫類型的曲風資訊。"""
+    return GENRE_INFO
 
 
 @app.post("/api/verify")

@@ -9,7 +9,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY generator.py main.py ./
+COPY generator.py main.py generate_previews.py ./
+
+# 預先渲染 15 款動畫預覽 GIF（包進 image 中）
+RUN python generate_previews.py
 
 EXPOSE 8080
 
