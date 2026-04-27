@@ -258,10 +258,25 @@ HTML_PAGE = """<!DOCTYPE html>
     <div class="field">
       <label>動畫類型</label>
       <select id="type">
-        <option value="dots">底部點陣律動 (Dots) ★</option>
-        <option value="bar">直條頻譜 (Bar)</option>
-        <option value="circular">圓環頻譜 (Circular)</option>
-        <option value="wave">波形線 (Wave)</option>
+        <optgroup label="── 經典 ──">
+          <option value="dots">底部點陣律動 (Dots) ★</option>
+          <option value="bar">直條頻譜 (Bar)</option>
+          <option value="circular">圓環頻譜 (Circular)</option>
+          <option value="wave">波形線 (Wave)</option>
+        </optgroup>
+        <optgroup label="── YT 流行款 ──">
+          <option value="pulse_ring">脈衝光環 (Pulse Ring)</option>
+          <option value="bouncing_balls">彈跳小球 (Bouncing Balls)</option>
+          <option value="particle_burst">粒子爆發 (Particle Burst)</option>
+          <option value="vinyl">黑膠唱片 (Vinyl)</option>
+          <option value="mountain">山形頻譜 (Mountain)</option>
+          <option value="ripple">水波紋 (Ripple)</option>
+          <option value="starburst">星芒散射 (Starburst)</option>
+          <option value="retro_grid">80s 復古網格 (Retro Grid)</option>
+          <option value="trail">拖尾彗星 (Trail)</option>
+          <option value="scrolling_line">滾動心電圖 (EKG Line)</option>
+          <option value="grid_matrix">LED 方塊矩陣 (Grid Matrix)</option>
+        </optgroup>
       </select>
     </div>
     <div class="field">
