@@ -419,7 +419,13 @@ function updateTypePreview() {
   const t = document.getElementById('type').value;
   const info = GENRE_INFO[t];
   if (!info) return;
-  document.getElementById('typePreviewImg').src = `/previews/${t}.gif`;
+  // 強制重新載入 GIF（清空 src 後再設新 src，並加 cache-buster），讓動畫從第一幀重新播放
+  const img = document.getElementById('typePreviewImg');
+  img.src = '';
+  // 用 requestAnimationFrame 確保 src='' 已生效再設新值
+  requestAnimationFrame(() => {
+    img.src = `/previews/${t}.gif?t=${Date.now()}`;
+  });
   document.getElementById('typePreviewTitle').textContent = info.label;
   document.getElementById('typePreviewGenre').textContent = info.genre;
 }
