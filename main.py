@@ -30,23 +30,39 @@ PREVIEW_DIR = Path(__file__).parent / "previews"
 if PREVIEW_DIR.exists():
     app.mount("/previews", StaticFiles(directory=str(PREVIEW_DIR)), name="previews")
 
-# 各動畫類型的「適合曲風」備註
+# 各動畫類型的「適合曲風」+「建議參數」
+# bpm: 建議節奏範圍 / bars: 建議頻譜條數 / duration: 建議時長（秒）
 GENRE_INFO = {
-    "dots":           {"label": "底部點陣律動",   "genre": "Lo-fi、Chill、Study Music、深夜放鬆 BGM"},
-    "bar":            {"label": "直條頻譜",       "genre": "Pop、K-pop、流行樂、EDM 通用萬用款"},
-    "circular":       {"label": "圓環頻譜",       "genre": "電子、Techno、舞曲、Future Bass"},
-    "wave":           {"label": "波形線",         "genre": "Ambient、療癒系、冥想、瑜伽音樂"},
-    "pulse_ring":     {"label": "脈衝光環",       "genre": "Lo-fi、Deep House、放鬆、夜晚 Vibe"},
-    "bouncing_balls": {"label": "彈跳小球",       "genre": "兒歌、輕快流行、Indie Pop、Disco"},
-    "particle_burst": {"label": "粒子爆發",       "genre": "EDM、Trap、Bass Drop、Festival 高潮段"},
-    "vinyl":          {"label": "黑膠唱片",       "genre": "Jazz、City Pop、復古 R&B、Soul、爵士"},
-    "mountain":       {"label": "山形頻譜",       "genre": "自然系、Acoustic、Folk、空靈 Indie"},
-    "ripple":         {"label": "水波紋",         "genre": "治癒系、Sleep Music、夜曲、ASMR"},
-    "starburst":      {"label": "星芒散射",       "genre": "Hip-hop、Trap、動感、街舞 Beat"},
-    "retro_grid":     {"label": "80s 復古網格",   "genre": "Synthwave、Vaporwave、Retrowave、80s 懷舊"},
-    "trail":          {"label": "拖尾彗星",       "genre": "House、Tech House、Progressive、舞池 Mix"},
-    "scrolling_line": {"label": "滾動心電圖",     "genre": "Beat 教學、Metronome、節拍器、極簡電音"},
-    "grid_matrix":    {"label": "LED 方塊矩陣",   "genre": "Chiptune、Game Music、復古電子、8-bit"},
+    "dots":           {"label": "底部點陣律動",   "genre": "Lo-fi、Chill、Study Music、深夜放鬆 BGM",
+                       "bpm": "70–90",   "bars": "32–48",  "duration": "30–60s"},
+    "bar":            {"label": "直條頻譜",       "genre": "Pop、K-pop、流行樂、EDM 通用萬用款",
+                       "bpm": "100–128", "bars": "64–80",  "duration": "30–60s"},
+    "circular":       {"label": "圓環頻譜",       "genre": "電子、Techno、舞曲、Future Bass",
+                       "bpm": "128–140", "bars": "64",     "duration": "30–60s"},
+    "wave":           {"label": "波形線",         "genre": "Ambient、療癒系、冥想、瑜伽音樂",
+                       "bpm": "60–80",   "bars": "64–96",  "duration": "60–120s"},
+    "pulse_ring":     {"label": "脈衝光環",       "genre": "Lo-fi、Deep House、放鬆、夜晚 Vibe",
+                       "bpm": "80–100",  "bars": "32",     "duration": "30–60s"},
+    "bouncing_balls": {"label": "彈跳小球",       "genre": "兒歌、輕快流行、Indie Pop、Disco",
+                       "bpm": "110–130", "bars": "24",     "duration": "15–30s"},
+    "particle_burst": {"label": "粒子爆發",       "genre": "EDM、Trap、Bass Drop、Festival 高潮段",
+                       "bpm": "128–150", "bars": "64",     "duration": "10–20s"},
+    "vinyl":          {"label": "黑膠唱片",       "genre": "Jazz、City Pop、復古 R&B、Soul、爵士",
+                       "bpm": "80–100",  "bars": "64",     "duration": "30–60s"},
+    "mountain":       {"label": "山形頻譜",       "genre": "自然系、Acoustic、Folk、空靈 Indie",
+                       "bpm": "70–90",   "bars": "64–96",  "duration": "30–60s"},
+    "ripple":         {"label": "水波紋",         "genre": "治癒系、Sleep Music、夜曲、ASMR",
+                       "bpm": "50–70",   "bars": "24",     "duration": "60–120s"},
+    "starburst":      {"label": "星芒散射",       "genre": "Hip-hop、Trap、動感、街舞 Beat",
+                       "bpm": "85–95",   "bars": "48",     "duration": "15–30s"},
+    "retro_grid":     {"label": "80s 復古網格",   "genre": "Synthwave、Vaporwave、Retrowave、80s 懷舊",
+                       "bpm": "95–115",  "bars": "32",     "duration": "30–60s"},
+    "trail":          {"label": "拖尾彗星",       "genre": "House、Tech House、Progressive、舞池 Mix",
+                       "bpm": "120–128", "bars": "32",     "duration": "30–60s"},
+    "scrolling_line": {"label": "滾動心電圖",     "genre": "Beat 教學、Metronome、節拍器、極簡電音",
+                       "bpm": "60–140",  "bars": "32",     "duration": "10–20s"},
+    "grid_matrix":    {"label": "LED 方塊矩陣",   "genre": "Chiptune、Game Music、復古電子、8-bit",
+                       "bpm": "120–160", "bars": "16",     "duration": "15–30s"},
 }
 
 # 密碼設定
@@ -272,23 +288,40 @@ HTML_PAGE = """<!DOCTYPE html>
   /* 動畫類型預覽（下拉選單下方） */
   .type-preview{
     margin-top:.6rem;background:#0a0a20;border:1px solid #2a2a4a;
-    border-radius:10px;padding:.6rem;display:flex;gap:.8rem;
-    align-items:center;
+    border-radius:10px;padding:.7rem;display:flex;gap:.9rem;
+    align-items:flex-start;
   }
   .type-preview img{
-    width:140px;height:78px;object-fit:cover;border-radius:6px;
+    width:160px;height:88px;object-fit:cover;border-radius:6px;
     background:#000;flex-shrink:0;
   }
   .type-preview .meta{flex:1;min-width:0}
   .type-preview .meta .title{
-    font-size:.85rem;color:#fff;font-weight:600;margin-bottom:.25rem;
+    font-size:.9rem;color:#fff;font-weight:600;margin-bottom:.3rem;
   }
   .type-preview .meta .genre{
-    font-size:.72rem;color:#9aa;line-height:1.4;
+    font-size:.72rem;color:#9aa;line-height:1.5;margin-bottom:.4rem;
   }
   .type-preview .meta .genre b{
     color:#00ffaa;font-weight:500;
   }
+  .type-preview .params{
+    display:flex;gap:.4rem;flex-wrap:wrap;
+  }
+  .type-preview .params .chip{
+    background:#1a1a35;border:1px solid #2a2a4a;border-radius:6px;
+    padding:.18rem .5rem;font-size:.68rem;color:#bbf;line-height:1.3;
+    display:inline-flex;align-items:center;gap:.2rem;
+  }
+  .type-preview .params .chip span{color:#fff;font-weight:600;}
+  .type-preview .params .chip .lab{color:#7b8;font-size:.62rem;}
+  .apply-btn{
+    margin-top:.45rem;font-size:.68rem;color:#0a0a1a;
+    background:linear-gradient(135deg,#00ffaa,#7b68ee);
+    border:none;border-radius:6px;padding:.28rem .7rem;cursor:pointer;
+    font-weight:600;transition:opacity .2s;
+  }
+  .apply-btn:hover{opacity:.85}
   .error{
     margin-top:1rem;color:#ff6b6b;font-size:.85rem;display:none;text-align:center;
   }
@@ -339,6 +372,12 @@ HTML_PAGE = """<!DOCTYPE html>
     <div class="meta">
       <div class="title" id="typePreviewTitle">底部點陣律動</div>
       <div class="genre"><b>適合曲風：</b><span id="typePreviewGenre">Lo-fi、Chill、Study Music、深夜放鬆 BGM</span></div>
+      <div class="params">
+        <span class="chip"><span class="lab">BPM</span><span id="typePreviewBpm">70–90</span></span>
+        <span class="chip"><span class="lab">頻譜條數</span><span id="typePreviewBars">32–48</span></span>
+        <span class="chip"><span class="lab">建議時長</span><span id="typePreviewDur">30–60s</span></span>
+      </div>
+      <button class="apply-btn" type="button" onclick="applySuggestedParams()">一鍵套用建議</button>
     </div>
   </div>
 
@@ -423,6 +462,35 @@ function updateTypePreview() {
   document.getElementById('typePreviewImg').src = `/previews/${t}.gif?t=${Date.now()}`;
   document.getElementById('typePreviewTitle').textContent = info.label;
   document.getElementById('typePreviewGenre').textContent = info.genre;
+  document.getElementById('typePreviewBpm').textContent = info.bpm || '–';
+  document.getElementById('typePreviewBars').textContent = info.bars || '–';
+  document.getElementById('typePreviewDur').textContent = info.duration || '–';
+}
+
+// 將「範圍」字串（例如 "70–90" 或 "30–60s"）取中位數整數
+function parseRangeMid(str) {
+  if (!str) return null;
+  const nums = str.match(/\d+/g);
+  if (!nums || !nums.length) return null;
+  if (nums.length === 1) return parseInt(nums[0], 10);
+  return Math.round((parseInt(nums[0], 10) + parseInt(nums[1], 10)) / 2);
+}
+
+function applySuggestedParams() {
+  const t = document.getElementById('type').value;
+  const info = GENRE_INFO[t];
+  if (!info) return;
+  const bpm = parseRangeMid(info.bpm);
+  const bars = parseRangeMid(info.bars);
+  const dur = parseRangeMid(info.duration);
+  if (bpm)  document.getElementById('bpm').value = bpm;
+  if (bars) document.getElementById('bars').value = bars;
+  if (dur)  document.getElementById('duration').value = Math.min(dur, 60); // 後端最多 60s
+  // 視覺回饋
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = '✓ 已套用';
+  setTimeout(() => { btn.textContent = orig; }, 1200);
 }
 
 async function startGenerate() {
